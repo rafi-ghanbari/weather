@@ -30,7 +30,7 @@ class WeatherServices {
   }
 
   /// Gets the current city name based on the device's geolocation.
-  /// 
+  ///
   /// Checks for location permissions and requests them if necessary.
   Future<String> getCurrentCity() async {
     LocationPermission permission = await Geolocator.checkPermission();
@@ -47,7 +47,9 @@ class WeatherServices {
     Position position;
     try {
       position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       ).timeout(const Duration(seconds: 10));
     } on TimeoutException {
       throw Exception("Location fetch timed out after 10 seconds.");

@@ -15,18 +15,38 @@ class _WeatherScreenState extends State<WeatherScreen> {
   // TODO: Replace with your own API key from OpenWeatherMap.
   final _weatherServices = WeatherServices('YOUR_API_KEY_HERE');
   Weather? _weather;
+  String _errorMessage = '';
 
   /// Fetches the current weather based on the user's location.
   _fetchWeather() async {
-    String city = await _weatherServices.getCurrentCity();
+    setState(() {
+      _errorMessage = '';
+    });
+
+    String city = '';
 
     try {
+      city = await _weatherServices.getCurrentCity();
+      if (city.isEmpty) {
+        setState(() {
+          _errorMessage =
+              'Error: Could not determine current city. Check Location settings.';
+        });
+        return;
+      }
+
       final weather = await _weatherServices.getWeather(city);
       setState(() {
         _weather = weather as Weather?;
+        _errorMessage = 'Weather loaded successfully for $city.';
       });
     } catch (e) {
-      print(e);
+      String baseError = 'Network/API Error: Failed to fetch weather data.';
+      String cityInfo = city.isNotEmpty ? ' (Attempted city: $city)' : '';
+      setState(() {
+        _errorMessage = '$baseError$cityInfo. Details: ${e.toString()}';
+      });
+      print("Fetch Error: $e");
     }
   }
 
@@ -60,14 +80,10 @@ class _WeatherScreenState extends State<WeatherScreen> {
     _fetchWeather();
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDarkMode ? Colors.white : Colors.black;
-
 
     return Scaffold(
       body: Center(
@@ -78,8 +94,11 @@ class _WeatherScreenState extends State<WeatherScreen> {
               const CircularProgressIndicator(),
               const SizedBox(height: 20),
               Text(
-                'Loading weather data... Please grant location permission.',
-                style: TextStyle(color: textColor),
+                _errorMessage.isNotEmpty
+                    ? _errorMessage
+                    : 'Loading weather data... Please grant location permission.',
+                style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
               ),
             ] else ...[
               Text(
