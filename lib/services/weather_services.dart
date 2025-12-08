@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:geocoding/geocoding.dart';
@@ -8,7 +9,7 @@ import '../models/weather_model.dart';
 
 /// Service class to handle weather API calls and location services.
 class WeatherServices {
-  static const BASE_URL = 'http://api.openweathermap.org/data/2.5/weather';
+  static const BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
   final String apiKey;
 
   WeatherServices(this.apiKey);
@@ -43,9 +44,14 @@ class WeatherServices {
       return "";
     }
 
-    Position position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-    );
+    Position position;
+    try {
+      position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      ).timeout(const Duration(seconds: 10));
+    } on TimeoutException {
+      throw Exception("Location fetch timed out after 10 seconds.");
+    }
 
     List<Placemark> placemarks = await placemarkFromCoordinates(
       position.latitude,
@@ -53,6 +59,10 @@ class WeatherServices {
     );
 
     String? city = placemarks[0].locality;
-    return city ?? "";
+    if (city != null && city.isNotEmpty) {
+      List<String> parts = city.split(RegExp(r'[,()،]'));
+      city = parts[0].trim();
+    }
+    return city ?? "London";
   }
 }
